@@ -6,32 +6,41 @@
 //
 
 import Foundation
-import Alamofire
 
 class WeatherService {
-   
+    /// Busca ubicaciones basadas en una consulta.
     func searchLocations(query: String, completion: @escaping (Result<[Location], Error>) -> Void) {
-        let url = "\(Constants.baseURL)/search.json?key=\(Constants.apiKey)&q=\(query)"
-        AF.request(url).responseDecodable(of: [Location].self) { response in
-            switch response.result {
-            case .success(let locations):
-                completion(.success(locations))
-            case .failure(let error):
-                completion(.failure(error))
-            }
+        guard let url = APIClient.shared.buildURL(
+            baseURL: Constants.baseURL,
+            endpoint: "/search.json",
+            queryItems: [
+                URLQueryItem(name: "key", value: Constants.apiKey),
+                URLQueryItem(name: "q", value: query)
+            ]
+        ) else {
+            completion(.failure(APIClient.APIClientError.invalidURL))
+            return
         }
-    }
 
+        APIClient.shared.performRequest(url: url, responseType: [Location].self, completion: completion)
+    }
 
     func fetchWeather(lat: Double, lon: Double, completion: @escaping (Result<Weather, Error>) -> Void) {
-        let url = "\(Constants.baseURL)/forecast.json?key=\(Constants.apiKey)&q=\(lat),\(lon)&days=3&lang=es"
-        AF.request(url).responseDecodable(of: Weather.self) { response in
-            switch response.result {
-            case .success(let weather):
-                completion(.success(weather))
-            case .failure(let error):
-                completion(.failure(error))
-            }
+        guard let url = APIClient.shared.buildURL(
+            baseURL: Constants.baseURL,
+            endpoint: "/forecast.json",
+            queryItems: [
+                URLQueryItem(name: "key", value: Constants.apiKey),
+                URLQueryItem(name: "q", value: "\(lat),\(lon)"),
+                URLQueryItem(name: "days", value: "3"),
+                URLQueryItem(name: "lang", value: "es")
+            ]
+        ) else {
+            completion(.failure(APIClient.APIClientError.invalidURL))
+            return
         }
+
+        APIClient.shared.performRequest(url: url, responseType: Weather.self, completion: completion)
     }
 }
+
